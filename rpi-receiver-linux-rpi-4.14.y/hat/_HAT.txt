@@ -1,0 +1,14 @@
+gcc -o eepmake eepmake.c
+Mit "sudo ./eepmake eeprom_settings.txt rpiReceiver.eep ../$(uname -r)/rpi-receiver.dtbo",
+das zu Schreibende eep-File erstellen.
+
+Mit "sudo ./eepflash.sh -w -f=rpiReceiver.eep -t=24c64",
+das Eeprom beschreiben. WE des Eeproms vorher auf Masse hängen,
+anschließend Schreibvorgang durch Bestätigung mit "yes" starten.
+(ev dtparam=i2c0=on in /boot/config.txt setzen)
+Das Eeprom kann gelöscht werden indem man das blank.eep File
+auf das Eeprom schreibt.
+
+
+Zum Nachlesen:
+https://www.raspberrypi.org/forums/viewtopic.php?f=29&t=108134
