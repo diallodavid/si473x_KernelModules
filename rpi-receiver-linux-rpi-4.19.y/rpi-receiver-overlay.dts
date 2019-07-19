@@ -1,0 +1,128 @@
+/*
+* Definitions for Raspberry Receiver
+*/
+/dts-v1/;
+/plugin/;
+
+/ {
+	compatible = "brcm,bcm2708", "brcm,bcm2709";
+
+	fragment@0 {
+		target = <&i2s>;
+		__overlay__ {
+			status = "okay"; /* device is enabled */
+		};
+	};
+
+	fragment@1 {
+		target = <&gpio>;
+		__overlay__ {
+			status = "okay"; /* device is enabled */
+			ssm2518_pins: ssm2518_pins {
+				brcm,pins = <17>; /* gpio no. */
+				brcm,function = <1>; /* 0:in, 1:out */
+				brcm,pull = <1>; /* 2:up 1:down 0:none */
+			};
+			si473x_pins: si473x_pins {
+				brcm,pins = <23>; /* gpio no. */
+				brcm,function = <1>; /* 0:in, 1:out */
+				brcm,pull = <1>; /* 2:up 1:down 0:none */
+			};
+			gpio_ir_pins: gpio_ir_pins {
+				brcm,pins = <26>;
+				brcm,function = <0>; // in
+				brcm,pull = <2>; // up
+			};
+		};
+	};
+
+	fragment@2 {
+		target = <&i2c_arm>;
+		__overlay__ {
+			#address-cells = <1>;
+			#size-cells = <0>;
+			status = "okay"; /* device is enabled */
+			ssm2518: ssm2518@34 {
+				#sound-dai-cells = <0>;
+				compatible = "adi,ssm2518";
+				reg = <0x34>;
+				pinctrl-names = "default";
+				pinctrl-0 = <&ssm2518_pins>;
+				gpios = <&gpio 17 0>; /* GPIO_ACTIVE_HIGH for ssm2518*/
+				status = "okay"; /* device is enabled */
+			};
+			si4731: si4731@63 {
+				#sound-dai-cells = <0>;
+				compatible = "si,si4731";
+				reg = <0x63>;
+				pinctrl-names = "default";
+				pinctrl-0 = <&si473x_pins>;
+				gpios = <&gpio 23 1>; /* GPIO_ACTIVE_LOW for si4731*/
+				interrupt-parent = <&gpio>;
+				interrupts = <24 2>; /* falling edge */
+				fm_seek_tune_rssi_treshold = /bits/ 16 <0x0014>;
+				fm_seek_tune_snr_threshold = /bits/ 16 <0x0003>;
+				fm_max_tune_error = /bits/ 16 <0x0014>;
+				am_seek_rssi_threshold = /bits/ 16 <0x0019>;
+				am_seek_snr_threshold = /bits/ 16 <0x0005>;
+				status = "okay"; /* device is enabled */
+			};
+			cs2300: cs2300@4e {
+				#clock-cells = <0>;
+				clock-output-names = "i2s_mclk";
+				compatible = "cirrus,cs2300";
+				reg = <0x4e>;
+				ratio-eff = <256>;
+				aux-out-src = "disabled";
+				min-loop-bw = <128>;
+				//clock-skip-enable;
+				status = "okay"; /* device is enabled */
+			};
+		};
+	};
+	fragment@3 {
+		target = <&sound>;
+		__overlay__ {
+			compatible = "htl-steyr,rpi-receiver";
+			rpi-receiver,name = "rpiReceiver";
+			rpi-receiver,widgets = "Speaker", "Speaker Out",
+									"Line", "In Tuner";
+			rpi-receiver,routing = "Speaker Out", "OUTL",
+									"Speaker Out", "OUTR",
+									"In Tuner", "ROUT",
+									"In Tuner", "LOUT";
+			rpi-receiver,mclk-fs = <256>;
+			status = "okay"; /* device is enabled */
+			rpi-receiver,dai-link@0 { /* I2S <- si4731 */
+				format = "i2s";
+				cpu {
+					sound-dai = <&i2s 0>;
+				};
+				codec {
+					sound-dai = <&si4731 0>;
+					clocks = <&cs2300>;
+				};
+			};
+			rpi-receiver,dai-link@1 { /* I2S -> ssm2518 */
+				format = "i2s";
+				cpu {
+					sound-dai = <&i2s 0>;
+				};
+				codec {
+					sound-dai = <&ssm2518 0>;
+					clocks = <&cs2300>;
+				};
+			};
+		};
+	};
+	fragment@4 {
+		target-path = "/";
+		__overlay__ {
+			gpio_ir: ir-receiver {
+				compatible = "gpio-ir-receiver";
+				gpios = <&gpio 26 1>;
+				status = "okay";
+			};
+		};
+	};
+};

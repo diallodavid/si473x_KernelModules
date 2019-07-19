@@ -1,0 +1,22 @@
+CIRRUS LOGIC Fractional-N Clock Synthesizer & Clock Multiplier
+
+Required properties:
+
+- compatible:		"cirrus,cs2300"
+- reg:			The chip select number on the I2C bus
+- #clock-cells:		must be <0>
+
+Example:
+
+&i2c_arm {
+	cs2000: clk_multiplier@4e {
+		#clock-cells = <0>;
+		clock-output-names = "i2s_mclk";
+		compatible = "cirrus,cs2300";
+		reg = <0x4e>;
+		ratio-eff = <256>;
+		aux-out-src = "disabled";
+		min-loop-bw = <128>;
+		//clock-skip-enable;
+	};
+};
